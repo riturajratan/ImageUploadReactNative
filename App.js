@@ -1,14 +1,30 @@
 import React, {useState} from 'react';
 import {Header, Image} from 'react-native-elements';
-import {StyleSheet, View, ActivityIndicator} from 'react-native';
+import {StyleSheet, View, ActivityIndicator, Platform} from 'react-native';
 import defaultAvatar from './profile.png';
 import ImagePicker from 'react-native-image-picker';
 
+const createFormData = (photo, body) => {
+  const data = new FormData();
+
+  data.append('photo', {
+    name: photo.fileName,
+    type: photo.type,
+    uri:
+      Platform.OS === 'android' ? photo.uri : photo.uri.replace('file://', ''),
+  });
+
+  Object.keys(body).forEach((key) => {
+    data.append(key, body[key]);
+  });
+
+  return data;
+};
+
 const App = () => {
   const [avatar, setAvatar] = useState(defaultAvatar);
-
+  const [title, setTitle] = useState('Profile Photo');
   const handlePicker = () => {
-    // console.log('edit');
     ImagePicker.showImagePicker({}, (response) => {
       console.log('Response = ', response);
 
@@ -19,8 +35,25 @@ const App = () => {
       } else if (response.customButton) {
         console.log('User tapped custom button: ', response.customButton);
       } else {
-        console.log(response.uri);
         setAvatar({uri: response.uri});
+        setTitle('Updating...'); // image start to upload on server so on header set text is 'Updating..'
+        fetch('http://localhost:3000/api/upload', {
+          method: 'POST',
+          headers: new Headers({
+            'Content-Type': 'application/x-www-form-urlencoded', //Specifying the Content-Type
+          }),
+          body: createFormData(response, {id: '123'}),
+        })
+          .then((data) => data.json())
+          .then((res) => {
+            console.log('upload succes', res);
+            setTitle('Profile Photo');
+            setAvatar({uri: response.image});
+          })
+          .catch((error) => {
+            console.log('upload error', error);
+            setTitle('Profile Photo');
+          });
       }
     });
   };
@@ -29,7 +62,7 @@ const App = () => {
     <View>
       <Header
         centerComponent={{
-          text: 'Profile Photo',
+          text: title,
           style: styles.headerText,
         }}
         rightComponent={{
