@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/api/upload', (req, res) => {
-  let upload = multer({storage: Storage}).single('picture');
+  let upload = multer({storage: Storage}).single('photo');
   upload(req, res, function (err) {
     if (!req.file) {
       return res.send('Please select an image to upload');
